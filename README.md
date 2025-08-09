@@ -40,9 +40,9 @@ A fun web-based chatbot that answers your questions with witty, sarcastic replie
 
 3. Install dependencies:
 
-   
+   ```bash
    pip install -r requirements.txt
-   
+   ```
 
 4. Set up your Google Gemini API key (optional for AI-generated sarcasm):
 
@@ -54,9 +54,9 @@ A fun web-based chatbot that answers your questions with witty, sarcastic replie
 
 5. Run the Flask app:
 
-
+```bash
    python app.py
-   
+   ```
 
 6. Open your browser at `http://127.0.0.1:5000`
 
