@@ -5,6 +5,15 @@
   <title>SarcasticBot</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nosifer&display=swap" rel="stylesheet">
+<style>
+h1{
+  font-size:2rem;
+  font-family:"Nosifer", sans-serif;
+}
+</style>
 </head>
 <body>
 <div class="emoji-container">
@@ -15,35 +24,45 @@
   <span class="emoji">🤣</span>
 </div>
 
+<div class="card">
+  <h1>Dashamoolam Damu</h1>
 
+  <form id="askForm">
+    <div class="input-wrapper" style="position:relative; width: 70%;">
+  <input id="question" name="question" placeholder="Ask me anything..." autocomplete="off" required style="width:100%; padding-right: 35px;"/>
+  <span id="micIcon" class="mic-icon" style="position:absolute; right:10px; top:50%; transform: translateY(-50%); cursor:pointer; font-size:18px;">🎤</span>
+</div>
+  
+    <!-- Added sarcasm style dropdown -->
+    <select id="style" name="style" aria-label="Choose sarcasm style">
+      <option value="mild">Mild</option>
+      <option value="savage" selected>Savage</option>
+      <option value="extra">Extra</option>
+    </select>
 
-  <div class="card">
-    <h1>SarcasticBot</h1>
+    <button id="askBtn" type="submit">Ask</button>
+  </form>
 
-    <form id="askForm">
-      <input id="question" name="question" placeholder="Ask me anything..." autocomplete="off" required />
-      <button id="askBtn" type="submit">Ask</button>
-    </form>
-
-    <div id="loading" class="loading hidden" aria-hidden="true">
-      <div class="eyes">
-        <div class="eye"><div class="pupil"></div></div>
-        <div class="eye"><div class="pupil"></div></div>
-      </div>
-      <div class="loading-text">Rolling eyes…</div>
+  <div id="loading" class="loading hidden" aria-hidden="true">
+    <div class="eyes">
+      <div class="eye"><div class="pupil"></div></div>
+      <div class="eye"><div class="pupil"></div></div>
     </div>
-
-    <div class="burn-container hidden" id="burnWrap">
-      <div class="burn-label">Burn Meter: <span id="burnPct">0%</span></div>
-      <div class="burn-bar"><div id="burnFill" class="burn-fill"></div></div>
-    </div>
-
-    <div id="reply" class="reply hidden"></div>
+    <div class="loading-text">Rolling eyes…</div>
   </div>
+
+  <div class="burn-container hidden" id="burnWrap">
+    <div class="burn-label">Burn Meter: <span id="burnPct">0%</span></div>
+    <div class="burn-bar"><div id="burnFill" class="burn-fill"></div></div>
+  </div>
+
+  <div id="reply" class="reply hidden"></div>
+</div>
 
 <script>
 const form = document.getElementById('askForm');
 const questionInput = document.getElementById('question');
+const styleSelect = document.getElementById('style');  // new dropdown
 const loading = document.getElementById('loading');
 const replyBox = document.getElementById('reply');
 const burnWrap = document.getElementById('burnWrap');
@@ -57,10 +76,12 @@ function hide(el){ el.classList.add('hidden'); }
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const q = questionInput.value.trim();
+  const style = styleSelect.value;  // get selected style
   if(!q) return;
 
   // UI prepare
   questionInput.disabled = true;
+  styleSelect.disabled = true;  // disable dropdown during request
   askBtn.disabled = true;
   replyBox.textContent = '';
   hide(replyBox);
@@ -72,7 +93,6 @@ form.addEventListener('submit', async (e) => {
   // animate burn meter while waiting
   let current = 0;
   const spinner = setInterval(() => {
-    // random increment to feel organic
     current = Math.min(95, current + Math.floor(Math.random()*8 + 2));
     burnFill.style.width = current + '%';
     burnPct.textContent = current + '%';
@@ -82,7 +102,7 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/ask', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({question: q})
+      body: JSON.stringify({question: q, style: style})
     });
     const data = await res.json();
 
@@ -92,7 +112,6 @@ form.addEventListener('submit', async (e) => {
       replyBox.textContent = data.error;
       show(replyBox);
     } else {
-      // animate to final burn value
       const final = data.burn || (60 + Math.floor(Math.random()*40));
       let anim = setInterval(() => {
         let pct = parseInt(burnFill.style.width) || 0;
@@ -105,7 +124,6 @@ form.addEventListener('submit', async (e) => {
         }
       }, 8);
 
-      // show reply with a tiny delay for drama
       setTimeout(() => {
         replyBox.textContent = data.reply;
         show(replyBox);
@@ -118,9 +136,14 @@ form.addEventListener('submit', async (e) => {
   } finally {
     hide(loading);
     questionInput.disabled = false;
+    styleSelect.disabled = false;  // re-enable dropdown
     askBtn.disabled = false;
     questionInput.focus();
   }
+});
+
+document.getElementById('micIcon').addEventListener('click', () => {
+  alert('Speech detected: 99% nonsense, 1% hope.');
 });
 </script>
 </body>

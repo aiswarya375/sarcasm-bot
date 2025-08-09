@@ -11,21 +11,30 @@ except Exception:
 
 app = Flask(__name__)
 
-SIMPLE_REPLIES = [
-    "Oh brilliant question — I almost forgot how curious humans are.",
-    "Let me drop everything and fix your life.",
-    "Amazing. Another question from the collection of questions.",
-    "Sure, because clearly the internet owes you an answer.",
-    "Wow, groundbreaking stuff. Please continue."
-]
+SIMPLE_REPLIES = {
+    "mild": [
+        "Oh, that's a cute question.",
+        "Well, aren't you curious today?",
+        "Sure, I'll humor you with an answer."
+    ],
+    "savage": [
+        "Oh brilliant question — I almost forgot how curious humans are.",
+        "Let me drop everything and fix your life.",
+        "Amazing. Another question from the collection of questions."
+    ],
+    "extra": [
+        "Wow, groundbreaking stuff. Please continue.",
+        "Sure, because clearly the internet owes you an answer.",
+        "I'm overwhelmed with your brilliance, really."
+    ]
+}
 
-def generate_sarcastic_reply(question):
-    # If Gemini/OpenAI configured, try to generate; otherwise fallback.
+def generate_sarcastic_reply(question, style="savage"):
     if HAS_GENAI:
         try:
             prompt = (
-                "You are a witty and sarcastic chatbot. Give a short, funny, "
-                "sarcastic reply in 1–2 sentences max. Never be serious.\n"
+                f"You are a witty and sarcastic chatbot with a {style} tone. "
+                "Give a short, funny, sarcastic reply in 1–2 sentences max. Never be serious.\n"
                 f"Question: {question}"
             )
             model = genai.GenerativeModel("gemini-2.5-flash")
@@ -35,8 +44,7 @@ def generate_sarcastic_reply(question):
                 return text
         except Exception:
             pass
-    # fallback: random canned reply with slight variation
-    return random.choice(SIMPLE_REPLIES)
+    return random.choice(SIMPLE_REPLIES.get(style, SIMPLE_REPLIES["savage"]))
 
 @app.route("/")
 def index():
@@ -46,10 +54,10 @@ def index():
 def ask():
     data = request.get_json() or {}
     question = data.get("question", "").strip()
+    style = data.get("style", "savage")
     if not question:
         return jsonify({"error": "No question provided"}), 400
-    reply = generate_sarcastic_reply(question)
-    # Burn meter value (60-100) — how savage the reply is
+    reply = generate_sarcastic_reply(question, style)
     burn = random.randint(60, 100)
     return jsonify({"reply": reply, "burn": burn})
 
