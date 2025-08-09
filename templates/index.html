@@ -1,19 +1,117 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>SarcasticBot</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="utf-8" />
+  <title>SarcasticBot</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>SarcasticBot</h1>
-        <form method="POST">
-            <input type="text" name="question" placeholder="Ask me anything..." required>
-            <button type="submit">Ask</button>
-        </form>
-        {% if reply %}
-            <p class="reply">{{ reply }}</p>
-        {% endif %}
+  <div class="card">
+    <h1>SarcasticBot</h1>
+
+    <form id="askForm">
+      <input id="question" name="question" placeholder="Ask me anything..." autocomplete="off" required />
+      <button id="askBtn" type="submit">Ask</button>
+    </form>
+
+    <div id="loading" class="loading hidden" aria-hidden="true">
+      <div class="eyes">
+        <div class="eye"><div class="pupil"></div></div>
+        <div class="eye"><div class="pupil"></div></div>
+      </div>
+      <div class="loading-text">Rolling eyes…</div>
     </div>
+
+    <div class="burn-container hidden" id="burnWrap">
+      <div class="burn-label">Burn Meter: <span id="burnPct">0%</span></div>
+      <div class="burn-bar"><div id="burnFill" class="burn-fill"></div></div>
+    </div>
+
+    <div id="reply" class="reply hidden"></div>
+  </div>
+
+<script>
+const form = document.getElementById('askForm');
+const questionInput = document.getElementById('question');
+const loading = document.getElementById('loading');
+const replyBox = document.getElementById('reply');
+const burnWrap = document.getElementById('burnWrap');
+const burnFill = document.getElementById('burnFill');
+const burnPct = document.getElementById('burnPct');
+const askBtn = document.getElementById('askBtn');
+
+function show(el){ el.classList.remove('hidden'); }
+function hide(el){ el.classList.add('hidden'); }
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = questionInput.value.trim();
+  if(!q) return;
+
+  // UI prepare
+  questionInput.disabled = true;
+  askBtn.disabled = true;
+  replyBox.textContent = '';
+  hide(replyBox);
+  burnFill.style.width = '0%';
+  burnPct.textContent = '0%';
+  show(loading);
+  show(burnWrap);
+
+  // animate burn meter while waiting
+  let current = 0;
+  const spinner = setInterval(() => {
+    // random increment to feel organic
+    current = Math.min(95, current + Math.floor(Math.random()*8 + 2));
+    burnFill.style.width = current + '%';
+    burnPct.textContent = current + '%';
+  }, 300);
+
+  try {
+    const res = await fetch('/ask', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({question: q})
+    });
+    const data = await res.json();
+
+    clearInterval(spinner);
+
+    if(data.error){
+      replyBox.textContent = data.error;
+      show(replyBox);
+    } else {
+      // animate to final burn value
+      const final = data.burn || (60 + Math.floor(Math.random()*40));
+      let anim = setInterval(() => {
+        let pct = parseInt(burnFill.style.width) || 0;
+        if(pct >= final){
+          clearInterval(anim);
+        } else {
+          pct++;
+          burnFill.style.width = pct + '%';
+          burnPct.textContent = pct + '%';
+        }
+      }, 8);
+
+      // show reply with a tiny delay for drama
+      setTimeout(() => {
+        replyBox.textContent = data.reply;
+        show(replyBox);
+      }, 600);
+    }
+  } catch (err) {
+    clearInterval(spinner);
+    replyBox.textContent = "Network tantrum. Try again.";
+    show(replyBox);
+  } finally {
+    hide(loading);
+    questionInput.disabled = false;
+    askBtn.disabled = false;
+    questionInput.focus();
+  }
+});
+</script>
 </body>
 </html>
